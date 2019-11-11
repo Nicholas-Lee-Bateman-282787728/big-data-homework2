@@ -1,2 +1,12 @@
+# Scala specific
 *.class
 *.log
+
+# IDE specific
+.vscode
+.idea
+META-INF/
+target/
+
+# Artifacts
+out
