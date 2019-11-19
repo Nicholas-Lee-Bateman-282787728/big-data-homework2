@@ -67,17 +67,17 @@ object Testing {
 
     var id = 1
 
-    val ssc = new StreamingContext(spark.sparkContext, Seconds(30));
-    val lines = ssc.socketTextStream("10.90.138.32", 8989)
+    val ssc = new StreamingContext(spark.sparkContext, Seconds(30));  // creating spark streaming context
+    val lines = ssc.socketTextStream("10.90.138.32", 8989)  // reading from the stream of the host
     lines.print(1)
-    lines.foreachRDD(foreachFunc = (rdd, time) =>{
+    lines.foreachRDD(foreachFunc = (rdd, time) =>{      //for each tweeet, convert inputsocstream to RDD,
       if (rdd.collect().length != 0) {
-        val df = Seq((id, rdd.toString())).toDF("id", "text")
-        val predicted = model.transform(df)
-        val label = predicted.select("prediction").first().getDouble(0)
-        val time_now = Calendar.getInstance().getTime()
-        val outDF = Seq((id, time_now.toString(), rdd.first(), label)).toDF("id", "time", "text", "label")
-        outDF.write.mode(SaveMode.Append).csv(streamOutputPath)
+        val df = Seq((id, rdd.toString())).toDF("id", "text")      // creating Dataframe
+        val predicted = model.transform(df)                      // prediction of the text
+        val label = predicted.select("prediction").first().getDouble(0)   // Get the labels
+        val time_now = Calendar.getInstance().getTime()                 // get the time
+        val outDF = Seq((id, time_now.toString(), rdd.first(), label)).toDF("id", "time", "text", "label") //to write the file
+        outDF.write.mode(SaveMode.Append).csv(streamOutputPath)  // in the output path
         println(predicted.select("text", "prediction"))
         id += 1
       }
