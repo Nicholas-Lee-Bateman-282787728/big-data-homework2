@@ -1,10 +1,9 @@
 package org.apache.spark.examples.ml
 import org.apache.spark.ml.Transformer
 import org.apache.spark.mllib.evaluation.MulticlassMetrics
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 import org.apache.spark.sql.types._
-import java.util.Locale
+import java.util.{Calendar, Locale}
 
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 
@@ -30,9 +29,10 @@ object Testing {
   def main(args: Array[String]): Unit = {
     
     val masterNodeAddress = "spark://10.91.54.103:7077" // master node ip:port address
-    val modeldirectory = "/home/abdurasul/decision-tree" // the output of the first classifier which is in our case the decision tree
-    val testOutputPath = "/home/abdurasul/output-spark4"// the output of the second classifier which is in our case the svm
-    
+    val modeldirectory = "decision-tree" // the output of the first classifier which is in our case the decision tree
+    val testOutputPath = "output-spark"// the output of the second classifier which is in our case the svm
+    val streamOutputPath = "stream_output"
+
     // creating spark session
     val spark = SparkSession
       .builder()   // build the spark session
@@ -65,41 +65,25 @@ object Testing {
     val accuracy = evaluator.evaluate(pl)
     println("Test Error = " + (1.0 - accuracy))
 
+    var id = 1
 
-
-    spark.stop()
-//    val ssc = new StreamingContext(spark.sparkContext, Seconds(1))
-//    val lines = ssc.socketTextStream("10.91.66.168", 8998)
-//    lines.print(1)
-//    val df1 = spark.readStream.format("kafka").option("kafka.bootstrap.servers", "10.91.66.168:8989").load()
-
-//    println("-----", lines.toString())
-//    ssc.start()
-//    ssc.awaitTermination()
-//    println(df1.printSchema)
-
+    val ssc = new StreamingContext(spark.sparkContext, Seconds(30));
+    val lines = ssc.socketTextStream("10.90.138.32", 8989)
+    lines.print(1)
+    lines.foreachRDD(foreachFunc = (rdd, time) =>{
+      if (rdd.collect().length != 0) {
+        val df = Seq((id, rdd.toString())).toDF("id", "text")
+        val predicted = model.transform(df)
+        val label = predicted.select("prediction").first().getDouble(0)
+        val time_now = Calendar.getInstance().getTime()
+        val outDF = Seq((id, time_now.toString(), rdd.first(), label)).toDF("id", "time", "text", "label")
+        outDF.write.mode(SaveMode.Append).csv(streamOutputPath)
+        println(predicted.select("text", "prediction"))
+        id += 1
+      }
+    })
 
 
   }
-//  def evaluateClassificationModel(
-//                                               model: Transformer,
-//                                               data: DataFrame,
-//                                               labelColName: String): Unit = {
-//    import org.apache.spark.ml.util.MetadataUtils
-//    val fullPredictions = model.transform(data).cache()
-//    val predictions = fullPredictions.select("prediction").rdd.map(_.getDouble(0))
-//    println("predictions ------", predictions)
-//    val labels = fullPredictions.select(labelColName).rdd.map(_.getDouble(0))
-//    println("labels ------", labels)
-//    // Print number of classes for reference.
-//
-////    val numClasses = MetadataUtils.getNumClasses(fullPredictions.schema(labelColName)) match {
-////      case Some(n) => n
-////      case None => throw new RuntimeException(
-////        "Unknown failure when indexing labels for classification.")
-////    }
-//
-//    val accuracy = new MulticlassMetrics(predictions.zip(labels)).accuracy
-//    println(s"  Accuracy (2 classes): $accuracy")
-//  }
+
 }

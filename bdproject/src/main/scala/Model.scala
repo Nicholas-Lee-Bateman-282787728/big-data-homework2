@@ -19,10 +19,10 @@ object Model {
 
 
     // before deploying to cluster we have trained the model
-    val testOutputPath = "/home/abdurasul/output"   // path of testOutputFile
+    val testOutputPath = "output"   // path of testOutputFile
     val masterNodeAddress = "spark://10.91.54.103:7077"  // master node ip and port number
-    val modelSavePath1 = "/home/abdurasul/decision-tree-cv" // path for the saved output of first model (in our case Decision Tree)
-    val modelSavePath2 = "/home/abdurasul/svm-cv"    // path for the saved output of the second model (SVM)
+    val modelSavePath1 = "decision-tree-cv" // path for the saved output of first model (in our case Decision Tree)
+    val modelSavePath2 = "svm-cv"    // path for the saved output of the second model (SVM)
 
     BasicConfigurator.configure()
     /*
@@ -131,14 +131,7 @@ object Model {
 
 //    PipelineModel.load("dfd")
 
-    import spark.implicits._
-//    val tested1 = cvModel1.transform(training)
-//      .select("prediction", "label")
-//    val evaluator1 = new MulticlassClassificationEvaluator()
-//      .setLabelCol("label")
-//      .setPredictionCol("prediction")
-//      .setMetricName("accuracy")
-//    val accuracy1 = evaluator1.evaluate(tested1)
+
     // to write the outputfile after testing
     val tested2 = cvModel2.transform(training)
       .select("prediction", "label")
