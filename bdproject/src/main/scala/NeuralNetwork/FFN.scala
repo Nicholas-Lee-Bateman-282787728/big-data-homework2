@@ -8,9 +8,7 @@ import NeuralNetwork.org.template.classification.NN
 import math.abs
 
 /**
- * layerCounts describes the number of neurons in each layer
- * layerCounts(0) is the number of input neurons (NOT including the weighing unit - 0)
- * layerCounts(layerCounts.length - 1) is the number of output neurons 
+
  *
  * beta - steepness of the sigmoid function
  * @param gamma - scaling parameter of corrections - the "learning rate" parameter

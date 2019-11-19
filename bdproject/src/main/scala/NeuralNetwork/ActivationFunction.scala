@@ -3,8 +3,7 @@ import scala.math.abs
 
 /**
  * A base trait for activation functions. There are two used most commonly: the
- * [[https://en.wikipedia.org/wiki/Sigmoid_function sigmoid]] function and the
- * [[https://en.wikipedia.org/wiki/Tanh Hyperbolic tangent]] function.
+
  */
 protected trait ActivationFunction extends Function1[Double, Double] {
 

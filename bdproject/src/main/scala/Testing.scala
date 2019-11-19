@@ -28,32 +28,35 @@ import org.apache.spark.streaming.{Seconds, StreamingContext}
 
 object Testing {
   def main(args: Array[String]): Unit = {
-    val masterNodeAddress = "spark://10.91.54.103:7077"
-    val modeldirectory = "/home/abdurasul/decision-tree"
-    val testOutputPath = "/home/abdurasul/output-spark4"
+    
+    val masterNodeAddress = "spark://10.91.54.103:7077" // master node ip:port address
+    val modeldirectory = "/home/abdurasul/decision-tree" // the output of the first classifier which is in our case the decision tree
+    val testOutputPath = "/home/abdurasul/output-spark4"// the output of the second classifier which is in our case the svm
+    
+    // creating spark session
     val spark = SparkSession
-      .builder()
-      .appName("Twitter Sentiment Analysis Testing")
-      .master(masterNodeAddress)
-      .getOrCreate()
+      .builder()   // build the spark session
+      .appName("Twitter Sentiment Analysis Testing") // name the spark session 
+      .master(masterNodeAddress) // given the master ip:port adress
+      .getOrCreate() // to create
 
-    val customSchema = StructType(Array(
-      StructField("id", IntegerType, true),
-      StructField("label", DoubleType, true),
-      StructField("text", StringType, true))
+    val customSchema = StructType(Array(  
+      StructField("id", IntegerType, true),   // the column name id
+      StructField("label", DoubleType, true), // label 0,1 if negative, positive
+      StructField("text", StringType, true)) // and the comment itself
     )
 
 
     import spark.implicits._
-    val model = org.apache.spark.ml.PipelineModel.load(modeldirectory)
-    val training = spark.read.format("csv").option("header", "true").schema(customSchema).load("dataset/train.csv")
+    val model = org.apache.spark.ml.PipelineModel.load(modeldirectory)   /// here we have new Pipeline to load the model
+    val testing = spark.read.format("csv").option("header", "true").schema(customSchema).load("dataset/testing.csv")   // and here we are loading the testing.csv data
 
-//    evaluateClassificationModel(model, training, "label")
+//    evaluateClassificationModel(model, testing, "label")
 
-//    val out = model.transform(training)
+//    val out = model.transform(testing)
 //      .select("id", "text", "prediction", "label")
-    implicit def bool2int(b:Boolean) = if (b) 1 else 0
-    val pl = model.transform(training)
+    implicit def bool2int(b:Boolean) = if (b) 1 else 0    /// a method that integarize a binarized value from true->1 and from false->0
+    val pl = model.transform(testing)    /// now  we are calculating the labels for the dataset testing.csv
     .select("prediction", "label")
     val evaluator = new MulticlassClassificationEvaluator()
       .setLabelCol("label")

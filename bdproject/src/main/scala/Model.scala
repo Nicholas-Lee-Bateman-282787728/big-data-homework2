@@ -16,46 +16,65 @@ import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
 object Model {
 
   def main(args: Array[String]): Unit = {
-    val testOutputPath = "/home/abdurasul/output"
-    val masterNodeAddress = "spark://10.91.54.103:7077"
-    val modelSavePath1 = "/home/abdurasul/decision-tree-cv"
-    val modelSavePath2 = "/home/abdurasul/svm-cv"
+
+
+    // before deploying to cluster we have trained the model
+    val testOutputPath = "/home/abdurasul/output"   // path of testOutputFile
+    val masterNodeAddress = "spark://10.91.54.103:7077"  // master node ip and port number
+    val modelSavePath1 = "/home/abdurasul/decision-tree-cv" // path for the saved output of first model (in our case Decision Tree)
+    val modelSavePath2 = "/home/abdurasul/svm-cv"    // path for the saved output of the second model (SVM)
 
     BasicConfigurator.configure()
+    /*
+      Creating Spark Session
+      With a name Twitter sentiment Analysis
+      With master node and get the session
+     */
     val spark = SparkSession
       .builder()
       .appName("Twitter Sentiment Analysis")
       .master(masterNodeAddress)
       .getOrCreate()
-
+    /*
+      Creating the structure of the dataframe here id,text,label
+     */
     val customSchema = StructType(Array(
       StructField("id", IntegerType, true),
       StructField("label", IntegerType, true),
       StructField("text", StringType, true))
     )
 
+    /*
+
+      Creating custom schema without lable colomn
+
+     */
     val customTestSchema = StructType(Array(
       StructField("id", IntegerType, true),
       StructField("text", StringType, true)
     ))
-
+    // here we will load the training data from dataset/train.csv
+    // and we will not ignore the header
     val training = spark.read.format("csv").option("header", "true").schema(customSchema).load("dataset/train.csv")
-
+    // as mentioned in report this is the part of the tokenizer that transforms text into words
     val tokenizer = new Tokenizer()
       .setInputCol("text")
       .setOutputCol("words")
+    // feature extractor HashingTF
+    // this will transform the sampels into features
+
     val hashingTF = new HashingTF()
       .setNumFeatures(1000)
       .setInputCol(tokenizer.getOutputCol)
       .setOutputCol("features")
-
+    // we declare decisionTree classifier
     val dt = new DecisionTreeClassifier()
       .setMaxDepth(20)
-
+    // declaration of the svm
     val lsvc = new LinearSVC()
       .setMaxIter(10)
       .setRegParam(0.1)
-
+  // new pipeline having array of tokenizer, hashingTF and decision tree objects
     val pipeline1 = new Pipeline()
       .setStages(Array(tokenizer, hashingTF, dt))
 
@@ -120,13 +139,14 @@ object Model {
 //      .setPredictionCol("prediction")
 //      .setMetricName("accuracy")
 //    val accuracy1 = evaluator1.evaluate(tested1)
-
+    // to write the outputfile after testing
     val tested2 = cvModel2.transform(training)
       .select("prediction", "label")
     val evaluator2 = new MulticlassClassificationEvaluator()
       .setLabelCol("label")
       .setPredictionCol("prediction")
       .setMetricName("accuracy")
+    // having the accuracy value
     val accuracy2 = evaluator2.evaluate(tested2)
 
 //    println("Accuracy Decision Tree: " + (accuracy1))
